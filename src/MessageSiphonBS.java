@@ -68,15 +68,15 @@ public class MessageSiphonBS implements Runnable {
       // (effectively sleeping the thread) until new data comes in.
       // when the program is finally done, null will come through.
       //
-      StringBuilder currentLine = new StringBuilder();
       long lineStartTime = 0;
       boolean bsSeen = false;
+      boolean beginningOfLine = true;  
       while (canRun) {
         // First, try to read as many characters as possible. Take care
         // not to block when:
         //  1. lineTimeout is nonzero, and
         //  2. we have some characters buffered already
-        while (lineTimeout == 0 || currentLine.length() == 0 || streamReader.ready()) {
+        while (lineTimeout == 0 || beginningOfLine || streamReader.ready()) {
           int c = streamReader.read();
           if (c == -1)
             return; // EOF
@@ -84,32 +84,20 @@ public class MessageSiphonBS implements Runnable {
             return;
 
           // Keep track of the line start time
-          if (currentLine.length() == 0)
+          if (beginningOfLine)
             lineStartTime = System.nanoTime();
             
           if (c == '\b') {
               if (!bsSeen) {
                   c = '\n';
                   bsSeen = true;
-                  // Store the character line
-                  currentLine.append((char)c);
-                  
-                  if (c == '\n') {
-                      // We read a full line, pass it on
-                      System.err.print(currentLine.toString());
-                      currentLine.setLength(0);
-                  }
+                  System.err.print((char )c);
+                  beginningOfLine = true;
               }
           } else {
               bsSeen = false;
-              // Store the character line
-              currentLine.append((char)c);
-              
-              if (c == '\n') {
-                  // We read a full line, pass it on
-                  System.err.print(currentLine.toString());
-                  currentLine.setLength(0);
-              }
+              System.err.print((char )c);
+              beginningOfLine = (c == '\n');
           }
 
         }
@@ -125,8 +113,6 @@ public class MessageSiphonBS implements Runnable {
           continue;
         }
 
-        System.err.print(currentLine.toString());
-        currentLine.setLength(0);
       }
       //EditorConsole.systemOut.println("messaging thread done");
     } catch (NullPointerException npe) {
