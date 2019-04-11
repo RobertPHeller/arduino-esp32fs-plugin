@@ -20,6 +20,7 @@ set -e
 
 rm -rf bin
 mkdir -p bin
+echo "javac ... src/ESP32FS.java"
 javac -target 1.8 -cp "$pde_path:$core_path:$lib_path" \
       -d bin src/ESP32FS.java
 
@@ -33,7 +34,11 @@ popd
 
 rm -rf bin
 mkdir -p bin
+echo "javac ... src/MessageSiphonBS.java"
 javac -target 1.8 -cp "$pde_path:$core_path:$lib_path" \
+       -d bin src/MessageSiphonBS.java
+echo "javac ... src/ESP32FSDL.java"
+javac -target 1.8 -cp "$pde_path:$core_path:$lib_path:bin" \
       -d bin src/ESP32FSDL.java
 
 pushd bin

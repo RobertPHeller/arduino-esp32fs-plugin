@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Thu Apr 11 09:47:34 2019
- *  Last Modified : <190411.1308>
+ *  Last Modified : <190411.1619>
  *
  *  Description	
  *
@@ -64,9 +64,10 @@ import processing.app.Sketch;
 import processing.app.tools.Tool;
 import processing.app.helpers.ProcessUtils;
 import processing.app.debug.TargetPlatform;
-
 import org.apache.commons.codec.digest.DigestUtils;
 import processing.app.helpers.FileUtils;
+
+import com.esp32.dlspiffs.MessageSiphonBS;
 
 import cc.arduino.files.DeleteFilesOnShutdown;
 
@@ -89,39 +90,9 @@ public class ESP32FSDL implements Tool {
     private int listenOnProcess(String[] arguments){
         try {
             final Process p = ProcessUtils.exec(arguments);
-            Thread thread = new Thread() {
-                public void run() {
-                    try {
-                        InputStreamReader reader = new InputStreamReader(p.getInputStream());
-                        int c;
-                        boolean bsSeen = false;
-                        while ((c = reader.read()) != -1) {
-                            //System.err.println("*** listenOnProcess(): c = "+c);
-                            if (c == 8) {
-                                if (!bsSeen) {
-                                    System.err.println("");
-                                    System.err.flush();
-                                    bsSeen = true;
-                                }
-                            } else {
-                                System.err.print((char) c);
-                                bsSeen = false;
-                            }
-                                
-                        }
-                        reader.close();
-                        
-                        reader = new InputStreamReader(p.getErrorStream());
-                        while ((c = reader.read()) != -1) {
-                            System.err.print((char) c);
-                        }
-                        reader.close();
-                    } catch (Exception e){}
-                }
-            };
-            thread.start();
+            new MessageSiphonBS(p.getInputStream(), 100);
+            new MessageSiphonBS(p.getErrorStream(), 100);
             int res = p.waitFor();
-            thread.join();
             return res;
         } catch (Exception e){
             return -1;
@@ -345,29 +316,20 @@ public class ESP32FSDL implements Tool {
         
         String dlCommand[];
         if(esptool.getAbsolutePath().endsWith(".py"))
-            dlCommand = new String[]{pythonCmd, esptool.getAbsolutePath(), "--chip", "esp32", "--baud", uploadSpeed, "--port", serialPort, "read_flash", ""+spiStart, ""+spiSize, imagePath};
+            dlCommand = new String[]{pythonCmd, esptool.getAbsolutePath(), "--chip", "esp32", "--baud", uploadSpeed, "--port", serialPort, "read_flash", "-p", ""+spiStart, ""+spiSize, imagePath};
         else
-            dlCommand = new String[]{esptool.getAbsolutePath(), "--chip", "esp32", "--baud", uploadSpeed, "--port", serialPort, "read_flash", ""+spiStart, ""+spiSize, imagePath};
+            dlCommand = new String[]{esptool.getAbsolutePath(), "--chip", "esp32", "--baud", uploadSpeed, "--port", serialPort, "read_flash", "-p", ""+spiStart, ""+spiSize, imagePath};
+        
+        for (String c : dlCommand) System.out.print(c + " ");
+        System.out.println();
         
         try {
-            Thread thread = new Thread() {
-                public void run() {
-                    try {
-                        if(listenOnProcess(dlCommand) != 0) {
-                            System.err.println();
-                            editor.statusError("SPIFFS Download Failed!");
-                            return;
-                        }
-                    } catch (Exception e){
-                        editor.statusError(e);
-                        editor.statusError("SPIFFS Download Failed!");
-                        return;
-                    }
-                }
-            };
-            thread.start();
-            thread.join();
-        } catch (Exception e) {
+            if(listenOnProcess(dlCommand) != 0) {
+                System.err.println();
+                editor.statusError("SPIFFS Download Failed!");
+                return;
+            }
+        } catch (Exception e){
             editor.statusError(e);
             editor.statusError("SPIFFS Download Failed!");
             return;
@@ -406,3 +368,4 @@ public class ESP32FSDL implements Tool {
         downloadAndUnpack();
     }
 }
+
