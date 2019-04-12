@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Thu Apr 11 09:47:34 2019
- *  Last Modified : <190411.1619>
+ *  Last Modified : <190412.1023>
  *
  *  Description	
  *
@@ -303,6 +303,27 @@ public class ESP32FSDL implements Tool {
         }
     
         
+        //load a list of all files
+        int fileCount = 0;
+        File dataFolder = new File(editor.getSketch().getFolder(), "data");
+        if (!dataFolder.exists()) {
+            dataFolder.mkdirs();
+        }
+        
+        Object[] options = { "Yes", "No" }; 
+        String title = "SPIFFS Unpack";
+        String message = "Data directory not empty!\nAre you sure you want to overwrite this directory?";
+        if(dataFolder.exists() && dataFolder.isDirectory()){
+            File[] files = dataFolder.listFiles();
+            if (files.length > 0 && JOptionPane.showOptionDialog(editor, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) != JOptionPane.YES_OPTION){
+                System.err.println();
+                editor.statusError("SPIFFS Warning: unpack canceled!");
+                return;
+            }
+        }
+        
+        String dataPath = dataFolder.getAbsolutePath();
+        
         editor.statusNotice("SPIFFS Downloading Image...");
         System.out.println("[SPIFFS] download : "+imagePath);
         System.out.println("[SPIFFS] address: "+spiStart);
@@ -334,28 +355,6 @@ public class ESP32FSDL implements Tool {
             editor.statusError("SPIFFS Download Failed!");
             return;
         }
-            
-        
-        //load a list of all files
-        int fileCount = 0;
-        File dataFolder = new File(editor.getSketch().getFolder(), "data");
-        if (!dataFolder.exists()) {
-            dataFolder.mkdirs();
-        }
-        
-        Object[] options = { "Yes", "No" }; 
-        String title = "SPIFFS Unpack";
-        String message = "Data directory not empty!\nAre you sure you want to overwrite this directory?";
-        if(dataFolder.exists() && dataFolder.isDirectory()){
-            File[] files = dataFolder.listFiles();
-            if (files.length > 0 && JOptionPane.showOptionDialog(editor, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]) != JOptionPane.YES_OPTION){
-                System.err.println();
-                editor.statusError("SPIFFS Warning: unpack canceled!");
-                return;
-            }
-        }
-        
-        String dataPath = dataFolder.getAbsolutePath();
         
         editor.statusNotice("SPIFFS Unpacking Image...");
         System.out.println("[SPIFFS] data   : "+dataPath);

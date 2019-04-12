@@ -91,12 +91,12 @@ public class MessageSiphonBS implements Runnable {
               if (!bsSeen) {
                   c = '\n';
                   bsSeen = true;
-                  System.err.print((char )c);
+                  System.out.print((char )c);
                   beginningOfLine = true;
               }
           } else {
               bsSeen = false;
-              System.err.print((char )c);
+              System.out.print((char )c);
               beginningOfLine = (c == '\n');
           }
 
